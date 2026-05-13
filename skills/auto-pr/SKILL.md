@@ -34,7 +34,7 @@ Create a PR for finalized Terraform changes only when orchestrator confirms succ
 Run:
 
 ```bash
-bash scripts/auto_pr.sh
+bash ./auto_pr.sh
 ```
 
 Optional environment variables:
