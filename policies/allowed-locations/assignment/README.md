@@ -2,7 +2,7 @@
 
 Assigns the `allowed-locations` policy definition at subscription, management group, or resource group scope. Clients choose which scope to target; only the matching resource is created.
 
-Supports inline scope exclusions via `not_scopes`. For richer per-resource exemptions use the `exclusions` module.
+Scope exclusions are handled via `not_scopes` — pass any resource group or child scope resource IDs that should be exempt from the deny effect.
 
 ## Requirements
 
@@ -24,13 +24,13 @@ Supports inline scope exclusions via `not_scopes`. For richer per-resource exemp
 | `allowed_locations` | `list(string)` | Yes | Regions to permit (passed as `allowedLocations` parameter). |
 | `display_name` | `string` | No | Display name. Default: `"Allowed locations"`. |
 | `description` | `string` | No | Description. Default: `"Restricts resource deployment to approved Azure regions."` |
-| `not_scopes` | `list(string)` | No | Scope IDs excluded from this assignment. Default: `[]`. |
+| `not_scopes` | `list(string)` | No | Resource group or child scope IDs excluded from the deny effect. Default: `[]`. |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| `assignment_id` | Resource ID of the policy assignment — pass this to the `exclusions` module. |
+| `assignment_id` | Resource ID of the policy assignment. |
 
 ## Examples
 
@@ -48,6 +48,25 @@ module "allowed_locations_assignment" {
 }
 ```
 
+### Subscription scope with not_scopes (exclude specific resource groups)
+
+```hcl
+module "allowed_locations_assignment" {
+  source = "git::https://github.com/<org>/tf-polices.git//policies/allowed-locations/assignment?ref=v1.0.0"
+
+  name                 = "allowed-locations"
+  policy_definition_id = module.allowed_locations_definition.allowed_locations_policy_definition_id
+  scope_type           = "subscription"
+  subscription_id      = "/subscriptions/00000000-0000-0000-0000-000000000000"
+  allowed_locations    = ["eastus", "eastus2"]
+
+  not_scopes = [
+    "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/legacy-rg",
+    "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/sandbox-rg",
+  ]
+}
+```
+
 ### Management group scope
 
 ```hcl
@@ -62,7 +81,7 @@ module "allowed_locations_assignment" {
 }
 ```
 
-### Resource group scope with inline not_scopes
+### Resource group scope
 
 ```hcl
 module "allowed_locations_assignment" {
@@ -73,10 +92,6 @@ module "allowed_locations_assignment" {
   scope_type           = "resource_group"
   resource_group_id    = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/my-rg"
   allowed_locations    = ["eastus"]
-
-  # Exclude a specific child resource group from the assignment
-  not_scopes = [
-    "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/exempt-rg",
-  ]
 }
 ```
+

@@ -1,16 +1,15 @@
 # allowed-locations
 
-Policy suite that restricts Azure resource deployment to approved regions. Split into three independently consumable modules — clients implement only what they need.
+Policy suite that restricts Azure resource deployment to approved regions. Split into two independently consumable modules — clients implement only what they need.
 
 | Module | Path | Purpose |
 |--------|------|---------|
 | **definition** | `policies/allowed-locations/definition` | Creates the Azure Policy definition |
-| **assignment** | `policies/allowed-locations/assignment` | Assigns the policy at subscription, management group, or resource group scope |
-| **exclusions** | `policies/allowed-locations/exclusions` | Creates Azure Policy exemptions for specific resources or scopes |
+| **assignment** | `policies/allowed-locations/assignment` | Assigns the policy at subscription, management group, or resource group scope. Supports `not_scopes` to exclude specific resource groups. |
 
 ## Typical consumption patterns
 
-### Definition only (policy registration, no assignment)
+### Definition only (policy registration, no enforcement)
 
 ```hcl
 module "allowed_locations_definition" {
@@ -20,7 +19,7 @@ module "allowed_locations_definition" {
 }
 ```
 
-### Definition + assignment
+### Definition + assignment at subscription scope
 
 ```hcl
 module "allowed_locations_definition" {
@@ -40,7 +39,7 @@ module "allowed_locations_assignment" {
 }
 ```
 
-### Full stack — definition + assignment + exclusions
+### Definition + assignment with not_scopes (exclude resource groups)
 
 ```hcl
 module "allowed_locations_definition" {
@@ -57,23 +56,32 @@ module "allowed_locations_assignment" {
   scope_type           = "subscription"
   subscription_id      = "/subscriptions/<subscription-id>"
   allowed_locations    = ["eastus", "westeurope"]
-}
 
-module "allowed_locations_exclusions" {
-  source = "git::https://github.com/<org>/tf-polices.git//policies/allowed-locations/exclusions?ref=v1.0.0"
-
-  policy_assignment_id = module.allowed_locations_assignment.assignment_id
-  scope_type           = "resource_group"
-
-  exemptions = [
-    {
-      name               = "exempt-legacy-rg"
-      scope_id           = "/subscriptions/<subscription-id>/resourceGroups/legacy-rg"
-      exemption_category = "Waiver"
-      display_name       = "Legacy workload exemption"
-      expires_on         = "2027-06-30T00:00:00Z"
-    },
+  # Resource groups excluded from the deny effect
+  not_scopes = [
+    "/subscriptions/<subscription-id>/resourceGroups/legacy-rg",
+    "/subscriptions/<subscription-id>/resourceGroups/sandbox-rg",
   ]
+}
+```
+
+### Definition + assignment at resource group scope
+
+```hcl
+module "allowed_locations_definition" {
+  source = "git::https://github.com/<org>/tf-polices.git//policies/allowed-locations/definition?ref=v1.0.0"
+
+  allowed_locations = ["eastus"]
+}
+
+module "allowed_locations_assignment" {
+  source = "git::https://github.com/<org>/tf-polices.git//policies/allowed-locations/assignment?ref=v1.0.0"
+
+  name                 = "allowed-locations"
+  policy_definition_id = module.allowed_locations_definition.allowed_locations_policy_definition_id
+  scope_type           = "resource_group"
+  resource_group_id    = "/subscriptions/<subscription-id>/resourceGroups/my-rg"
+  allowed_locations    = ["eastus"]
 }
 ```
 

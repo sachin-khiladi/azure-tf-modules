@@ -2,7 +2,7 @@
 
 Creates the Azure Policy **definition** that restricts resource deployment to approved regions.
 
-This module is consumed standalone or paired with the `assignment` and `exclusions` modules.
+This module is consumed standalone or paired with the `assignment` module.
 
 ## Requirements
 

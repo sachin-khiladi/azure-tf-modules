@@ -65,6 +65,6 @@ variable "description" {
 
 variable "not_scopes" {
   type        = list(string)
-  description = "List of scope IDs to exclude from this assignment. Use the exclusions module for richer exemption support."
+  description = "List of resource group or child scope resource IDs to exclude from this assignment. Excluded scopes are not subject to the policy deny effect."
   default     = []
 }
